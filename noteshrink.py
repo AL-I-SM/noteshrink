@@ -22,6 +22,8 @@ import numpy as np
 from PIL import Image
 from scipy.cluster.vq import kmeans, vq
 
+path = 'c://-= 2025 =-//сжатие//1//' # сделать работу через опцию и сохранение в эту папку
+
 ######################################################################
 
 def quantize(image, bits_per_channel=None):
@@ -29,6 +31,7 @@ def quantize(image, bits_per_channel=None):
     '''Reduces the number of bits per channel in the given image.'''
 
     if bits_per_channel is None:
+        #bits_per_channel = 6
         bits_per_channel = 6
 
     assert image.dtype == np.uint8
@@ -198,8 +201,11 @@ def get_argument_parser():
 
     show_default = ' (default %(default)s)'
 
-    parser.add_argument('filenames', metavar='IMAGE', nargs='+',
+    parser.add_argument('-f', dest='filenames', metavar='IMAGE', nargs='+',
                         help='files to convert')
+
+    parser.add_argument('-p', metavar='PATH', help='path to images',
+                        dest='path', nargs='+')
 
     parser.add_argument('-q', dest='quiet', action='store_true',
                         default=False,
@@ -226,7 +232,7 @@ def get_argument_parser():
                         default='8',
                         help='number of output colors '+show_default)
 
-    parser.add_argument('-p', dest='sample_fraction',
+    parser.add_argument('-px', dest='sample_fraction',
                         metavar='PERCENT',
                         type=percent, default='5',
                         help='%% of pixels to sample' + show_default)
@@ -288,13 +294,19 @@ and this way you can supply files using a wildcard and still have the
 pages ordered correctly.
 
     '''
+    if options.path:
+        path = " ".join(options.path)
+        print(f'обработка каталога: {path}')
+        filenames = [item for item in os.listdir(path) if os.path.isfile(path+item)]
+    else:
+        filenames = options.sort_numerically
 
     if not options.sort_numerically:
-        return options.filenames
+        return filenames, path
 
-    filenames = []
-
-    for filename in options.filenames:
+    filenames_to_sort = []
+    
+    for filename in filenames:
         basename = os.path.basename(filename)
         root, _ = os.path.splitext(basename)
         matches = re.findall(r'[0-9]+', root)
@@ -302,19 +314,19 @@ pages ordered correctly.
             num = int(matches[-1])
         else:
             num = -1
-        filenames.append((num, filename))
+        filenames_to_sort.append((num, filename))
 
-    return [fn for (_, fn) in sorted(filenames)]
+    return [fn for (_, fn) in sorted(filenames_to_sort)], path
 
 ######################################################################
 
-def load(input_filename):
+def load(input_filename, path):
 
     '''Load an image with Pillow and convert it to numpy array. Also
 returns the image DPI in x and y as a tuple.'''
 
     try:
-        pil_img = Image.open(input_filename)
+        pil_img = Image.open(path + input_filename)
     except IOError:
         sys.stderr.write('warning: error opening {}\n'.format(
             input_filename))
@@ -428,7 +440,7 @@ the palette.
 
 ######################################################################
 
-def save(output_filename, labels, palette, dpi, options):
+def save(output_filename, labels, palette, dpi, options, path):
 
     '''Save the label/palette pair out as an indexed PNG image.  This
 optionally saturates the pallete by mapping the smallest color
@@ -453,7 +465,7 @@ the background color to pure white.
 
     output_img = Image.fromarray(labels, 'P')
     output_img.putpalette(palette.flatten())
-    output_img.save(output_filename, dpi=dpi)
+    output_img.save(path + output_filename, dpi=dpi)
 
 ######################################################################
 
@@ -473,7 +485,7 @@ their samples together into one large array.
 
     for input_filename in filenames:
 
-        img, _ = load(input_filename)
+        img, _ = load(input_filename, path)
         if img is None:
             continue
 
@@ -532,20 +544,20 @@ def notescan_main(options):
 
     '''Main function for this program when run as script.'''
 
-    filenames = get_filenames(options)
+    filenames, path = get_filenames(options)
 
     outputs = []
 
     do_global = options.global_palette and len(filenames) > 1
 
     if do_global:
-        filenames, palette = get_global_palette(filenames, options)
+        filenames, palette = get_global_palette(filenames, options, path)
 
     do_postprocess = bool(options.postprocess_cmd)
 
     for input_filename in filenames:
 
-        img, dpi = load(input_filename)
+        img, dpi = load(input_filename, path)
         if img is None:
             continue
 
@@ -561,7 +573,7 @@ def notescan_main(options):
 
         labels = apply_palette(img, palette, options)
 
-        save(output_filename, labels, palette, dpi, options)
+        save(output_filename, labels, palette, dpi, options, path)
 
         if do_postprocess:
             post_filename = postprocess(output_filename, options)
@@ -581,7 +593,9 @@ def notescan_main(options):
 
 def main():
     '''Parse args and call notescan_main().'''
+    #print(get_argument_parser().parse_args())
     notescan_main(options=get_argument_parser().parse_args())
+    
 
 if __name__ == '__main__':
     main()
