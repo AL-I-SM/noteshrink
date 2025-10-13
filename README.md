@@ -14,7 +14,7 @@ Convert scans of handwritten notes to beautiful, compact PDFs -- see full writeu
 ## Usage
 
 ```
-./noteshrink.py IMAGE1 [IMAGE2 ...]
+./noteshrink.py -p PATH
 ```
 
 Building the examples (already in `example_output`):
