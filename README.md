@@ -1,7 +1,7 @@
 noteshrink
 ==========
 
-Convert scans of handwritten notes to beautiful, compact PDFs -- see full writeup at <https://mzucker.github.io/2016/09/20/noteshrink.html>
+Convert scans of handwritten notes to beautiful and compact -- see full writeup at <https://mzucker.github.io/2016/09/20/noteshrink.html>
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Convert scans of handwritten notes to beautiful, compact PDFs -- see full writeu
 ## Usage
 
 ```
-./noteshrink.py -p PATH
+./noteshrink.py IMAGE1 [IMAGE2 ...]
 ```
 
 Building the examples (already in `example_output`):
