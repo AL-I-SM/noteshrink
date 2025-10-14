@@ -20,6 +20,8 @@ from argparse import ArgumentParser
 
 import numpy as np
 from PIL import Image
+from PIL import ImageFilter
+from PIL import ImageEnhance
 from scipy.cluster.vq import kmeans, vq
 
 path = 'c://-= 2025 =-//сжатие//1//' # сделать работу через опцию и сохранение в эту папку
@@ -126,7 +128,7 @@ value.
 
     if not isinstance(rgb, np.ndarray):
         rgb = np.array(rgb)
-
+        
     axis = len(rgb.shape)-1
     cmax = rgb.max(axis=axis).astype(np.float32)
     cmin = rgb.min(axis=axis).astype(np.float32)
@@ -160,7 +162,7 @@ def postprocess(output_filename, options):
     if os.path.exists(post_filename):
         os.unlink(post_filename)
 
-    if not options.quiet:
+    if options.quiet:
         print('  running "{}"...'.format(cmd), end=' ')
         sys.stdout.flush()
 
@@ -173,7 +175,7 @@ def postprocess(output_filename, options):
 
     if result == 0:
 
-        if not options.quiet:
+        if options.quiet:
             print('{:.1f}% reduction'.format(
                 100*(1.0-float(after)/before)))
 
@@ -201,13 +203,28 @@ def get_argument_parser():
 
     show_default = ' (default %(default)s)'
 
+    parser.add_argument('-th1', dest='threshold1', metavar='THRESOLD2', default=-1,
+                       help='threshold image before')
+    
+    parser.add_argument('-bl', dest='blur', metavar='BLUR)', default=-1,
+                       help='blur image')
+
+    parser.add_argument('-sh', dest='sharpness', metavar='SHARPNESS)', default=-1,
+                       help='sharpness image')
+
+    parser.add_argument('-th2', dest='threshold2', metavar='THRESOLD2', default=-1,
+                       help='threshold image after')
+                       
+    parser.add_argument('-cs', dest='scale', metavar='SCALE', default = 1,
+                       help='scale image')
+
     parser.add_argument('-f', dest='filenames', metavar='IMAGE', nargs='+',
                         help='files to convert')
 
     parser.add_argument('-p', metavar='PATH', help='path to images',
                         dest='path', nargs='+')
 
-    parser.add_argument('-q', dest='quiet', action='store_true',
+    parser.add_argument('-nq', dest='quiet', action='store_true',
                         default=False,
                         help='reduce program output')
 
@@ -297,9 +314,9 @@ pages ordered correctly.
     if options.path:
         path = " ".join(options.path)
         print(f'обработка каталога: {path}')
-        filenames = [item for item in os.listdir(path) if os.path.isfile(path+item)]
+        filenames = [item for item in os.listdir(path) if os.path.isfile(path+item) and item.endswith('.jpg')]
     else:
-        filenames = options.sort_numerically
+        filenames = options.filenames
 
     if not options.sort_numerically:
         return filenames, path
@@ -389,7 +406,7 @@ palette, as well as a mask corresponding to the foreground pixels.
 
     '''
 
-    if not options.quiet:
+    if options.quiet:
         print('  getting palette...')
 
     bg_color = get_bg_color(samples, 6)
@@ -418,7 +435,7 @@ the palette.
 
     '''
 
-    if not options.quiet:
+    if options.quiet:
         print('  applying palette...')
 
     bg_color = palette[0]
@@ -449,7 +466,7 @@ the background color to pure white.
 
     '''
 
-    if not options.quiet:
+    if options.quiet:
         print('  saving {}...'.format(output_filename))
 
     if options.saturate:
@@ -463,8 +480,32 @@ the background color to pure white.
         palette = palette.copy()
         palette[0] = (255, 255, 255)
 
-    output_img = Image.fromarray(labels, 'P')
+    output_img = Image.fromarray(labels)
     output_img.putpalette(palette.flatten())
+    
+    output_img = output_img.convert("RGB")
+    
+    threshold1 = int(options.threshold1)
+    threshold2 = int(options.threshold2)
+    blur = float(options.blur)
+    sharpness = int(options.sharpness)
+    scale = float(options.scale)
+    
+    if threshold1 > 0:
+        output_img = output_img.point(lambda x: 255 if x > threshold1 else 0)
+    
+    if blur > 0:
+        output_img = output_img.filter(ImageFilter.GaussianBlur(blur))
+    
+    if sharpness > 0:
+        output_img = ImageEnhance.Sharpness(output_img).enhance(sharpness)
+        
+    if threshold2 > 0:
+        output_img = output_img.point(lambda x: 255 if x > threshold2 else 0)
+   
+    output_img = output_img.resize((int(output_img.width//scale), 
+                                    int(output_img.height//scale)))
+   
     output_img.save(path + output_filename, dpi=dpi)
 
 ######################################################################
@@ -480,7 +521,7 @@ their samples together into one large array.
 
     all_samples = []
 
-    if not options.quiet:
+    if options.quiet:
         print('building global palette...')
 
     for input_filename in filenames:
@@ -489,7 +530,7 @@ their samples together into one large array.
         if img is None:
             continue
 
-        if not options.quiet:
+        if options.quiet:
             print('  processing {}...'.format(input_filename))
 
         samples = sample_pixels(img, options)
@@ -505,9 +546,9 @@ their samples together into one large array.
 
     global_palette = get_palette(all_samples, options)
 
-    if not options.quiet:
+    if options.quiet:
         print('  done\n')
-
+    
     return input_filenames, global_palette
 
 ######################################################################
@@ -524,7 +565,7 @@ def emit_pdf(outputs, options):
         cmd_print = cmd.replace('%i', ' '.join(outputs))
     cmd = cmd.replace('%i', ' '.join(outputs))
 
-    if not options.quiet:
+    if options.quiet:
         print('running PDF command "{}"...'.format(cmd_print))
 
     try:
@@ -533,10 +574,11 @@ def emit_pdf(outputs, options):
         result = -1
 
     if result == 0:
-        if not options.quiet:
+        if options.quiet:
             print('  wrote', options.pdfname)
     else:
         sys.stderr.write('warning: PDF command failed\n')
+
 
 ######################################################################
 
@@ -564,7 +606,7 @@ def notescan_main(options):
         output_filename = '{}{:04d}.png'.format(
             options.basename, len(outputs))
 
-        if not options.quiet:
+        if options.quiet:
             print('opened', input_filename)
 
         if not do_global:
@@ -572,7 +614,7 @@ def notescan_main(options):
             palette = get_palette(samples, options)
 
         labels = apply_palette(img, palette, options)
-
+        
         save(output_filename, labels, palette, dpi, options, path)
 
         if do_postprocess:
@@ -584,9 +626,11 @@ def notescan_main(options):
 
         outputs.append(output_filename)
 
-        if not options.quiet:
+        if options.quiet:
             print('  done\n')
-
+        
+        print('.', end = '')
+        
     emit_pdf(outputs, options)
 
 ######################################################################
@@ -594,8 +638,12 @@ def notescan_main(options):
 def main():
     '''Parse args and call notescan_main().'''
     #print(get_argument_parser().parse_args())
+    if len(sys.argv) == 1:
+        sys.argv = ["noteshrink", "(no any arguments)"]
     notescan_main(options=get_argument_parser().parse_args())
     
 
 if __name__ == '__main__':
     main()
+
+## py noteshrink.py -p "c:\\-= 2025 =-\\сжатие\\1\\" -bl 0.2 -th1 160 -sh 100 -cs 2.5 -th2 130 -sh 20
