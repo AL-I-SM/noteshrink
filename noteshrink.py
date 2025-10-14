@@ -15,6 +15,9 @@ import os
 import re
 import subprocess
 import shlex
+import time
+from progress.bar import FillingSquaresBar, ChargingBar
+from tqdm import tqdm
 
 from argparse import ArgumentParser
 
@@ -23,8 +26,6 @@ from PIL import Image
 from PIL import ImageFilter
 from PIL import ImageEnhance
 from scipy.cluster.vq import kmeans, vq
-
-path = 'c://-= 2025 =-//сжатие//1//' # сделать работу через опцию и сохранение в эту папку
 
 ######################################################################
 
@@ -133,7 +134,9 @@ value.
     cmax = rgb.max(axis=axis).astype(np.float32)
     cmin = rgb.min(axis=axis).astype(np.float32)
     delta = cmax - cmin
-
+    
+    np.seterr(divide='ignore', invalid='ignore')
+    
     saturation = delta.astype(np.float32) / cmax.astype(np.float32)
     saturation = np.where(cmax == 0, 0, saturation)
 
@@ -202,6 +205,9 @@ def get_argument_parser():
         description='convert scanned, hand-written notes to PDF')
 
     show_default = ' (default %(default)s)'
+
+    parser.add_argument('-ex', dest='extension', metavar='EXTENTION', default='png',
+                       help='input file extension')
 
     parser.add_argument('-th1', dest='threshold1', metavar='THRESOLD2', default=-1,
                        help='threshold image before')
@@ -312,9 +318,10 @@ pages ordered correctly.
 
     '''
     if options.path:
-        path = " ".join(options.path)
+        path = " ".join(options.path)  # это работает, но хотелось бы сделать красивее
+        ## print(options.path)
         print(f'обработка каталога: {path}')
-        filenames = [item for item in os.listdir(path) if os.path.isfile(path+item) and item.endswith('.jpg')]
+        filenames = [item for item in os.listdir(path) if os.path.isfile(path+item) and item.endswith(options.extension)]
     else:
         filenames = options.filenames
 
@@ -597,13 +604,17 @@ def notescan_main(options):
 
     do_postprocess = bool(options.postprocess_cmd)
 
-    for input_filename in filenames:
+    ## bar = ChargingBar('file processing', max = len(filenames))
 
+    for input_filename in tqdm(filenames):
+        
+        ## bar.next()
+        
         img, dpi = load(input_filename, path)
         if img is None:
             continue
 
-        output_filename = '{}{:04d}.png'.format(
+        output_filename = '{}{:04d}.jpg'.format(
             options.basename, len(outputs))
 
         if options.quiet:
@@ -629,8 +640,10 @@ def notescan_main(options):
         if options.quiet:
             print('  done\n')
         
-        print('.', end = '')
-        
+        # print('.', end = '')
+    
+    ## bar.finish() 
+    
     emit_pdf(outputs, options)
 
 ######################################################################
@@ -646,4 +659,4 @@ def main():
 if __name__ == '__main__':
     main()
 
-## py noteshrink.py -p "c:\\-= 2025 =-\\сжатие\\1\\" -bl 0.2 -th1 160 -sh 100 -cs 2.5 -th2 130 -sh 20
+## py noteshrink.py -p "c:\-= 2025 =-\сжатие\1\\" -bl 0.3 -th1 160 -sh 100 -cs 2.2 -th2 140 -sh 200
