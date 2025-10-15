@@ -1,12 +1,6 @@
-#!/usr/bin/env python
-
-'''Converts sequence of images to compact PDF while removing speckles,
-bleedthrough, etc.
-
 '''
-
-# for some reason pylint complains about members being undefined :(
-# pylint: disable=E1101
+Cleaning and save images for djvu documents (removing speckles bleedthrough, etc. and resize images)
+'''
 
 from __future__ import print_function
 
@@ -227,7 +221,7 @@ def get_argument_parser():
     parser.add_argument('-f', dest='filenames', metavar='IMAGE', nargs='+',
                         help='files to convert')
 
-    parser.add_argument(dest='path', metavar='PATH', 
+    parser.add_argument(dest='path', metavar='PATH', nargs='+', 
                         help='path to images')
 
     parser.add_argument('-nq', dest='quiet', action='store_true',
@@ -318,7 +312,7 @@ pages ordered correctly.
 
     '''
     if options.path:
-        path, basename = os.path.split(options.path)
+        path, basename = os.path.split(" ".join(options.path))
  
         if basename:                                                               ## если указан конкретный файл, то...
             file_name, file_extention = os.path.splitext(basename)                 ## ...определить расширение
@@ -332,7 +326,7 @@ pages ordered correctly.
                      and item.endswith(file_extention)
                      and item.startswith(prefix_name)]
 
-        print(f'обработка каталога: {path}; тип файлов: {prefix_name}*{file_extention}')
+        print(f'обработка каталога: [{path}] тип входных файлов: [{prefix_name}*{file_extention}]')
         
     else:
         filenames = options.filenames
@@ -676,5 +670,5 @@ def main():
 if __name__ == '__main__':
     main()
 
-## py noteshrink.py "c:\-= 2025 =-\сжатие\1\\" -bl 0.3 -th1 160 -sh 100 -cs 2.2 -th2 140 -sh 200
-## py noteshrink.py "c:\-= 2025 =-\сжатие\1\file001.png" -bl 0.4 -th1 160 -sh 100 -cs 1.8 -th2 140 -sh 130
+## py noteshrink.py c:\-= 2025 =-\сжатие\1\ -bl 0.4 -th1 165 -sh 100 -cs 1.8 -th2 150 -sh 130
+## py noteshrink.py c:\-= 2025 =-\сжатие\1\file001.png -bl 0.4 -th1 160 -sh 100 -cs 1.8 -th2 150 -sh 1301
