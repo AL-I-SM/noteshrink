@@ -227,7 +227,7 @@ def get_argument_parser():
     parser.add_argument('-f', dest='filenames', metavar='IMAGE', nargs='+',
                         help='files to convert')
 
-    parser.add_argument(dest='path', metavar='PATH', nargs='+',
+    parser.add_argument(dest='path', metavar='PATH', 
                         help='path to images')
 
     parser.add_argument('-nq', dest='quiet', action='store_true',
@@ -318,7 +318,7 @@ pages ordered correctly.
 
     '''
     if options.path:
-        path, basename = os.path.split(options.path[0])  # это работает, но хотелось бы сделать красивее
+        path, basename = os.path.split(options.path)
  
         if basename:                                                               ## если указан конкретный файл, то...
             file_name, file_extention = os.path.splitext(basename)                 ## ...определить расширение
@@ -530,7 +530,7 @@ the background color to pure white.
     output_img = output_img.resize((int(output_img.width//scale), 
                                     int(output_img.height//scale)))
    
-    output_img.save(path + output_filename, dpi=dpi)
+    output_img.save(os.path.join(path, output_filename), dpi=dpi)
 
 ######################################################################
 
