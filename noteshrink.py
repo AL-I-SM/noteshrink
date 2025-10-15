@@ -206,7 +206,7 @@ def get_argument_parser():
 
     show_default = ' (default %(default)s)'
 
-    parser.add_argument('-ex', dest='extension', metavar='EXTENTION', default='png',
+    parser.add_argument('-ex', dest='extension', metavar='EXTENTION', default='.png',
                        help='input file extension')
 
     parser.add_argument('-th1', dest='threshold1', metavar='THRESOLD2', default=-1,
@@ -227,8 +227,8 @@ def get_argument_parser():
     parser.add_argument('-f', dest='filenames', metavar='IMAGE', nargs='+',
                         help='files to convert')
 
-    parser.add_argument('-p', metavar='PATH', help='path to images',
-                        dest='path', nargs='+')
+    parser.add_argument(dest='path', metavar='PATH', nargs='+',
+                        help='path to images')
 
     parser.add_argument('-nq', dest='quiet', action='store_true',
                         default=False,
@@ -318,13 +318,29 @@ pages ordered correctly.
 
     '''
     if options.path:
-        path = " ".join(options.path)  # это работает, но хотелось бы сделать красивее
-        ## print(options.path)
-        print(f'обработка каталога: {path}')
-        filenames = [item for item in os.listdir(path) if os.path.isfile(path+item) and item.endswith(options.extension)]
+        path, basename = os.path.split(options.path[0])  # это работает, но хотелось бы сделать красивее
+ 
+        if basename:                                                               ## если указан конкретный файл, то...
+            file_name, file_extention = os.path.splitext(basename)                 ## ...определить расширение
+            prefix_name = "".join([ch for ch in file_name if not ch.isdigit()])    ## и префикс файла
+        else:
+            file_extention = options.extension
+            prefix_name = ""
+        
+        filenames = [item for item in os.listdir(path) 
+                     if os.path.join(path, basename)
+                     and item.endswith(file_extention)
+                     and item.startswith(prefix_name)]
+
+        print(f'обработка каталога: {path}; тип файлов: {prefix_name}*{file_extention}')
+        
     else:
         filenames = options.filenames
-
+        path = os.path.abspath(filenames[0])
+        print(path)
+    
+    ###
+    
     if not options.sort_numerically:
         return filenames, path
 
@@ -349,11 +365,12 @@ def load(input_filename, path):
     '''Load an image with Pillow and convert it to numpy array. Also
 returns the image DPI in x and y as a tuple.'''
 
+    abs_path = os.path.join(path, input_filename)
     try:
-        pil_img = Image.open(path + input_filename)
+        pil_img = Image.open(abs_path)
     except IOError:
         sys.stderr.write('warning: error opening {}\n'.format(
-            input_filename))
+                         abs_path))
         return None, None
 
     if pil_img.mode != 'RGB':
@@ -644,7 +661,7 @@ def notescan_main(options):
     
     ## bar.finish() 
     
-    emit_pdf(outputs, options)
+    ## emit_pdf(outputs, options)
 
 ######################################################################
 
@@ -659,4 +676,5 @@ def main():
 if __name__ == '__main__':
     main()
 
-## py noteshrink.py -p "c:\-= 2025 =-\сжатие\1\\" -bl 0.3 -th1 160 -sh 100 -cs 2.2 -th2 140 -sh 200
+## py noteshrink.py "c:\-= 2025 =-\сжатие\1\\" -bl 0.3 -th1 160 -sh 100 -cs 2.2 -th2 140 -sh 200
+## py noteshrink.py "c:\-= 2025 =-\сжатие\1\file001.png" -bl 0.4 -th1 160 -sh 100 -cs 1.8 -th2 140 -sh 130
