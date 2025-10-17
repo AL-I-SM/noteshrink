@@ -1,4 +1,5 @@
-noteshrink
-numpy>=1.10
-scipy
-Image
+colorama==0.4.6
+numpy==2.3.4
+pillow==12.0.0
+scipy==1.16.2
+tqdm==4.67.1

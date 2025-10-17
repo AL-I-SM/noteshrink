@@ -2,7 +2,7 @@
 Cleaning and save images for djvu documents (removing speckles bleedthrough, etc. and resize images)
 '''
 
-from __future__ import print_function
+#from __future__ import print_function
 
 import sys
 import os
@@ -21,6 +21,7 @@ from PIL import ImageFilter
 from PIL import ImageEnhance
 from scipy.cluster.vq import kmeans, vq
 
+prefix_name = ''
 ######################################################################
 
 def quantize(image, bits_per_channel=None):
@@ -230,7 +231,7 @@ def get_argument_parser():
 
     parser.add_argument('-b', dest='basename', metavar='BASENAME',
                         default='page',
-                        help='output PNG filename base' + show_default)
+                        help='output filename base' + show_default)
 
     parser.add_argument('-o', dest='pdfname', metavar='PDF',
                         default='output.pdf',
@@ -625,7 +626,7 @@ def notescan_main(options):
         if img is None:
             continue
 
-        output_filename = '{}{:04d}.jpg'.format(
+        output_filename = '{}{:04d}.gif'.format(
             options.basename, len(outputs))
 
         if options.quiet:
@@ -661,7 +662,7 @@ def notescan_main(options):
 
 def main():
     '''Parse args and call notescan_main().'''
-    #print(get_argument_parser().parse_args())
+    get_argument_parser().parse_args()
     if len(sys.argv) == 1:
         sys.argv = ["noteshrink", "(no any arguments)"]
     notescan_main(options=get_argument_parser().parse_args())
@@ -670,5 +671,5 @@ def main():
 if __name__ == '__main__':
     main()
 
-## py noteshrink.py c:\-= 2025 =-\сжатие\1\ -bl 0.4 -th1 165 -sh 100 -cs 1.8 -th2 150 -sh 130
-## py noteshrink.py c:\-= 2025 =-\сжатие\1\file001.png -bl 0.4 -th1 160 -sh 100 -cs 1.8 -th2 150 -sh 1301
+## py noteshrink.py c:\-= 2025 =-\сжатие\1\ -bl 0.4 -th1 165 -sh 100 -cs 1.8 -th2 150 -sh 130 -b a_
+## py noteshrink.py c:\-= 2025 =-\сжатие\1\file001.png -bl 0.4 -th1 160 -sh 100 -cs 1.8 -th2 150 -sh 130 -b a_
